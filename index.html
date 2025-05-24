@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checklist</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <h2 class="text-2xl font-bold text-center text-blue-400 mb-4">Checklist Tracker</h2>
+  
+  <div class="max-w-xl mx-auto">
+    <div class="flex gap-2">
+  <input id="newTaskInput" placeholder="New task..." class="flex-1 bg-gray-800 border border-blue-500 rounded text-white px-3 py-1 text-sm">
+  <button onclick="makeNewTask()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">Add</button>
+</div>
+    
+    <ul id="theTaskList" class="mt-4 space-y-3"></ul>
+  </div>
+
+  <script>
+    var savedTasksFromBrowser = localStorage.getItem("tasks");
+    if (savedTasksFromBrowser) {
+      var allTasks = JSON.parse(savedTasksFromBrowser);
+    } else {
+      var allTasks = [];
+    }
+
+    function saveStuffToBrowser() {
+      localStorage.setItem("tasks", JSON.stringify(allTasks));
+    }
+
+    function makeNewTask() {
+      var userInput = document.getElementById("newTaskInput").value;
+      if (userInput === "") return;
+
+      var newTaskObj = {
+        name: userInput,
+        completed: false,
+        subtasks: []
+      };
+      allTasks.push(newTaskObj);
+      document.getElementById("newTaskInput").value = "";
+      saveStuffToBrowser();
+      showEverythingAgain();
+    }
+
+    function showEverythingAgain() {
+      var theList = document.getElementById("theTaskList");
+      theList.innerHTML = "";
+
+      for (var i = 0; i < allTasks.length; i++) {
+        var task = allTasks[i];
+
+        var li = document.createElement("li");
+        li.className = "bg-gray-800 px-4 py-2 rounded-lg shadow";
+
+        var subtasksHTML = "";
+        for (var j = 0; j < task.subtasks.length; j++) {
+          var st = task.subtasks[j];
+          subtasksHTML += '<li class="flex items-center gap-2">' +
+                          '<input type="checkbox" ' + (st.completed ? 'checked' : '') + ' onchange="toggleSubtaskStatus(' + i + ',' + j + ')" class="accent-blue-500 w-3.5 h-3.5">' +
+                          '<input type="text" value="' + st.name + '" oninput="changeSubtaskText(' + i + ',' + j + ', this.value)" class="bg-gray-700 px-3 py-1 text-sm rounded text-white w-full">' +
+                          '</li>';
+        }
+
+        li.innerHTML = '<div class="flex justify-between items-center mb-1">' +
+                          '<div class="flex items-center gap-2">' +
+                            '<input type="checkbox" ' + (task.completed ? 'checked' : '') + ' onchange="toggleMainTaskDone(' + i + ')" class="accent-blue-500 w-4 h-4">' +
+                            '<span class="' + (task.completed ? 'line-through text-gray-400' : '') + '">' + task.name + '</span>' +
+                          '</div>' +
+                          '<div class="text-xs flex gap-2 text-white/60">' +
+                            '<button onclick="addAnotherSubtask(' + i + ')" class="hover:text-blue-400 text-base">＋</button>' +
+                            '<button onclick="flipTheSubtasks(this)" class="hover:text-blue-400 text-sm">▼</button>' +
+                            '<button onclick="removeTask(' + i + ')" class="hover:text-red-400 text-base">🗑</button>' +
+                          '</div>' +
+                       '</div>' +
+                       '<ul class="subtasks ml-5 space-y-1 max-h-0 overflow-hidden transition-all ease-in-out duration-300">' +
+                       subtasksHTML +
+                       '</ul>';
+
+        theList.appendChild(li);
+      }
+    }
+
+    function toggleMainTaskDone(index) {
+      allTasks[index].completed = !allTasks[index].completed;
+      saveStuffToBrowser();
+      showEverythingAgain();
+    }
+
+    function addAnotherSubtask(taskIndex) {
+      allTasks[taskIndex].subtasks.push({ name: "", completed: false });
+      saveStuffToBrowser();
+      showEverythingAgain();
+
+      setTimeout(function() {
+        var subtasksList = document.querySelectorAll("#theTaskList > li")[taskIndex].querySelector(".subtasks");
+        subtasksList.classList.remove("max-h-0");
+        subtasksList.classList.add("max-h-96");
+      }, 0);
+    }
+
+    function toggleSubtaskStatus(taskIndex, subtaskIndex) {
+      var thisSubtask = allTasks[taskIndex].subtasks[subtaskIndex];
+      thisSubtask.completed = !thisSubtask.completed;
+
+      var allChecked = true;
+      for (var i = 0; i < allTasks[taskIndex].subtasks.length; i++) {
+        if (!allTasks[taskIndex].subtasks[i].completed) {
+          allChecked = false;
+        }
+      }
+      allTasks[taskIndex].completed = allChecked;
+
+      saveStuffToBrowser();
+      showEverythingAgain();
+    }
+
+    function changeSubtaskText(taskIndex, subtaskIndex, newVal) {
+      allTasks[taskIndex].subtasks[subtaskIndex].name = newVal;
+      saveStuffToBrowser();
+    }
+
+    function removeTask(index) {
+      allTasks.splice(index, 1);
+      saveStuffToBrowser();
+      showEverythingAgain();
+    }
+
+    function flipTheSubtasks(btn) {
+      var theSubtasks = btn.closest("li").querySelector(".subtasks");
+      if (theSubtasks.classList.contains("max-h-0")) {
+        theSubtasks.classList.remove("max-h-0");
+        theSubtasks.classList.add("max-h-96");
+        btn.innerText = "▲";
+      } else {
+        theSubtasks.classList.remove("max-h-96");
+        theSubtasks.classList.add("max-h-0");
+        btn.innerText = "▼";
+      }
+    }
+
+    showEverythingAgain();
+  </script>
+</body>
+</html>
